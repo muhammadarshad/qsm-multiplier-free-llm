@@ -14,6 +14,7 @@ QSM replaces power-hungry hardware multiplier arrays with L1-cache-friendly look
 * `verify_scaling_parity.py`: Dynamic scaling parity verification checking C engine output against float baselines on Gemma-4 8B projections.
 * `QSM_PROOF.md`: Mathematical proof of lossless QSM division.
 * `PAPER_DRAFT.md`: Full publication draft text.
+* `PAPER_DRAFT.pdf`: Compiled PDF version of the publication draft for Zenodo/publication.
 * `hardware/`: Verilog RTL source files and testbenches comparing QSM vs. standard MAC blocks.
 
 ## Getting Started
