@@ -1,0 +1,9 @@
+gemma_test
+libmanifold.dylib
+*.o
+.DS_Store
+__pycache__/
+*.pyc
+*.bin
+*.onix
+qsm_zenodo_package.zip
