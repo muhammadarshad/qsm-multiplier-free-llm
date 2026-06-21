@@ -1,18 +1,21 @@
-# Resurrecting Quarter-Square Arithmetic for Multiplier-Free Large Language Model Inference
-
-**Muhammad Arshad**  
-Independent Researcher  
-ORCID: [0009-0002-1314-0494](https://orcid.org/0009-0002-1314-0494)  
-GitHub: [muhammadarshad](https://github.com/muhammadarshad)  
-Email: marshad.dev@gmail.com  
-
 ---
-
-### Abstract
-*Large Language Models (LLMs) are notoriously memory- and compute-bound, demanding massive energy footprints when deployed on resource-constrained edge platforms. While low-bit quantization (e.g., 4-bit affine quantization) significantly mitigates memory bandwidth bottlenecks, the underlying execution engines still rely on power-hungry hardware Multiply-Accumulate (MAC) units to perform billions of dot products during inference. In this work, we propose a multiplier-free, lookup-table-based LLM inference paradigm that resurrects **Quarter-Square Multiplication (QSM)**, an ancient arithmetic identity, to perform zero-shot linear projections. We mathematically prove that QSM is lossless in integer spaces, losing exactly zero bits of precision during bit-shift division. We demonstrate a working C/Apple Silicon implementation of this paradigm on production models (Gemma-2 2B and Gemma-4 8B), showing token-for-token parity ($0.0$ absolute difference) with standard floating-point execution. Hardware synthesis estimations under TSMC 28nm standard cells indicate that QSM achieves a **~20% reduction in active gate area**, a **~38% speedup in critical path latency**, and up to **60% dynamic energy savings** by completely eliminating combinatorial logic glitching.*
-
-**Keywords:** Large Language Models, Edge Computing, Quarter-Square Multiplication, Hardware-Efficient Deep Learning, Multiplier-Free Inference.
-
+title: "Resurrecting Quarter-Square Arithmetic for Multiplier-Free Large Language Model Inference"
+author:
+  - name: Muhammad Arshad
+    affiliation: Independent Researcher
+    orcid: 0009-0002-1314-0494
+    email: marshad.dev@gmail.com
+abstract: |
+  Large Language Models (LLMs) are notoriously memory- and compute-bound, demanding massive energy footprints when deployed on resource-constrained edge platforms. While low-bit quantization (e.g., 4-bit affine quantization) significantly mitigates memory bandwidth bottlenecks, the underlying execution engines still rely on power-hungry hardware Multiply-Accumulate (MAC) units to perform billions of dot products during inference. In this work, we propose a multiplier-free, lookup-table-based LLM inference paradigm that resurrects **Quarter-Square Multiplication (QSM)**, an ancient arithmetic identity, to perform zero-shot linear projections. We mathematically prove that QSM is lossless in integer spaces, losing exactly zero bits of precision during bit-shift division. We demonstrate a working C/Apple Silicon implementation of this paradigm on production models (Gemma-2 2B and Gemma-4 8B), showing token-for-token parity ($0.0$ absolute difference) with standard floating-point execution. Hardware synthesis estimations under TSMC 28nm standard cells indicate that QSM achieves a **~20% reduction in active gate area**, a **~38% speedup in critical path latency**, and up to **60% dynamic energy savings** by completely eliminating combinatorial logic glitching.
+keywords: [Large Language Models, Edge Computing, Quarter-Square Multiplication, Hardware-Efficient Deep Learning, Multiplier-Free Inference]
+geometry: margin=1in
+fontsize: 11pt
+header-includes: |
+  \usepackage{amsmath}
+  \usepackage{tikz}
+  \usetikzlibrary{shapes,arrows,positioning}
+  \usepackage{booktabs}
+  \usepackage{microtype}
 ---
 
 ## I. INTRODUCTION
@@ -100,22 +103,50 @@ This table is small enough to fit inside L1 data caches or register files, ensur
 ### A. RTL Pipeline Structure
 We designed a synthesizable hardware accelerator in Verilog comparing standard MAC units with QSM.
 
-```mermaid
-graph TD
-    W[A: 8-bit Input Weight] --> Add[+]
-    X[B: 8-bit Input Activation] --> Add
-    W --> Sub[-]
-    X --> Sub
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm and 2cm,
+    block/.style={draw, rectangle, fill=blue!5, minimum height=2.5em, minimum width=8em, rounded corners=2pt, align=center, font=\small},
+    input/.style={draw, rectangle, fill=gray!10, minimum height=2.5em, minimum width=8em, rounded corners=2pt, align=center, font=\small},
+    op/.style={draw, circle, fill=green!5, minimum size=2em, inner sep=0pt, font=\bfseries, align=center},
+    arrow/.style={-latex, thick, draw=black!70},
+    label/.style={font=\scriptsize\itshape}
+]
+    % Nodes
+    \node (W) [input] {Weight $W$ \\ (8-bit)};
+    \node (X) [input, right=2.5cm of W] {Activation $X$ \\ (8-bit)};
     
-    Add -->|Sum: 9-bit| ROM1[ROM 1: 512x18-bit ROM]
-    Sub -->|Diff: 8-bit| ROM2[ROM 2: 256x18-bit ROM]
+    \node (Sum) [op, below=1.5cm of W] {$+$};
+    \node (Diff) [op, below=1.5cm of X] {$-$};
     
-    ROM1 -->|sq_sum: 18-bit| SubSq[-]
-    ROM2 -->|sq_diff: 18-bit| SubSq
+    \node (ROM1) [block, below=1.5cm of Sum] {ROM 1 \\ $512 \times 18\text{-bit}$ \\ (Sum$^2$)};
+    \node (ROM2) [block, below=1.5cm of Diff] {ROM 2 \\ $256 \times 18\text{-bit}$ \\ (Diff$^2$)};
     
-    SubSq -->|18-bit| Shift[>> 2]
-    Shift -->|16-bit Product| Acc[32-bit Accumulator]
-```
+    % SubSq centered between ROM1 and ROM2, below them
+    \path (ROM1.south) -- (ROM2.south) node[midway, below=1.5cm, op] (SubSq) {$-$};
+    
+    \node (Shift) [block, below=1.2cm of SubSq, fill=orange!5, minimum width=6em] {Shift \\ (\texttt{>> 2})};
+    \node (Acc) [block, below=1.2cm of Shift, fill=red!5] {Accumulator \\ (32-bit)};
+    
+    % Connections
+    \draw[arrow] (W.south) -- (Sum);
+    \draw[arrow] (W.south) -- (Diff);
+    \draw[arrow] (X.south) -- (Sum);
+    \draw[arrow] (X.south) -- (Diff);
+    
+    \draw[arrow] (Sum) -- node[left, align=right, font=\scriptsize\itshape] {Sum: 9-bit} (ROM1);
+    \draw[arrow] (Diff) -- node[right, align=left, font=\scriptsize\itshape] {Diff: 8-bit} (ROM2);
+    
+    \draw[arrow] (ROM1.south) -- node[below left, font=\scriptsize\itshape] {sq\_sum: 18-bit} (SubSq);
+    \draw[arrow] (ROM2.south) -- node[below right, font=\scriptsize\itshape] {sq\_diff: 18-bit} (SubSq);
+    
+    \draw[arrow] (SubSq) -- node[right, font=\scriptsize\itshape] {18-bit} (Shift);
+    \draw[arrow] (Shift) -- node[right, font=\scriptsize\itshape] {16-bit Product} (Acc);
+\end{tikzpicture}
+\caption{QSM Hardware Accelerator Pipeline Structure.}
+\label{fig:qsm_pipeline}
+\end{figure}
 
 ### B. Gate Complexity & Area
 * **Standard MAC Unit**:
