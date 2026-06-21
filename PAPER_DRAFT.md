@@ -158,11 +158,11 @@ We verified our QSM C engine against the baseline float model on multiple scales
 
 | Evaluation Level / Target Tensor | Shape | Weight Quantization | Max Absolute Error vs. Float Baseline | Verification Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **Unit Verification** (65,536 combinations) | N/A | 8-bit Integer | $0.000000e+00$ | **✅ 100% Passed (Lossless)** |
-| **Gemma 2 2B** (Full autoregressive generate) | N/A | 4-bit (HPQ4) | $0.000000e+00$ | **✅ 100% Token Parity** |
-| `model.layers.0.self_attn.q_proj` (Gemma 4 8B) | $2048 \times 2560$ | 4-bit (HPQ4) | $0.000000e+00$ | **✅ 100% Passed (Lossless)** |
-| `model.layers.0.self_attn.o_proj` (Gemma 4 8B) | $2560 \times 2048$ | 4-bit (HPQ4) | $0.000000e+00$ | **✅ 100% Passed (Lossless)** |
-| `model.layers.0.mlp.down_proj` (Gemma 4 8B) | $2560 \times 10240$ | 4-bit (HPQ4) | $0.000000e+00$ | **✅ 100% Passed (Lossless)** |
+| **Unit Verification** (65,536 combinations) | N/A | 8-bit Integer | $0.000000e+00$ | **Passed (100% Lossless)** |
+| **Gemma 2 2B** (Full autoregressive generate) | N/A | 4-bit (HPQ4) | $0.000000e+00$ | **Passed (100% Parity)** |
+| `model.layers.0.self_attn.q_proj` (Gemma 4 8B) | $2048 \times 2560$ | 4-bit (HPQ4) | $0.000000e+00$ | **Passed (100% Lossless)** |
+| `model.layers.0.self_attn.o_proj` (Gemma 4 8B) | $2560 \times 2048$ | 4-bit (HPQ4) | $0.000000e+00$ | **Passed (100% Lossless)** |
+| `model.layers.0.mlp.down_proj` (Gemma 4 8B) | $2560 \times 10240$ | 4-bit (HPQ4) | $0.000000e+00$ | **Passed (100% Lossless)** |
 
 The C QSM engine matched the floating-point baseline precisely on all shapes, returning **exactly $0.0$ absolute error**, confirming that bit-shift division carries zero numerical precision loss.
 
